@@ -8,13 +8,17 @@ use dotenv::dotenv;
 use log::{error, info};
 
 // This is the configuration struct for environment variables
-#[derive(Debug, Deserialize, Clone)]
-struct Config{
-    infobip_api_key: String,
-    infobip_base_url: String,
-    whatsapp_phone_number_id: String,
-    trigger_word: String,
-    recipient_phone_number: String,
+mod some_module{
+    use serde::Deserialize;
+
+    #[derive(Debug, Deserialize, Clone)]
+    pub struct Config{
+        pub infobip_api_key: String,
+        pub infobip_base_url: String,
+        pub whatsapp_phone_number_id: String,
+        pub trigger_word: String,
+        pub recipient_phone_number: String,
+    }
 }
 
 // Incoming wozap payloaddd!
@@ -38,8 +42,8 @@ fn init_logging() {
 }
 
 //Load configuration from environment variables
-fn load_config() -> Config{
-    Config{
+fn load_config() -> some_module::Config{
+    some_module::Config{
         infobip_api_key: env::var("INFOBIP_API_KEY").expect("INFOBIP_API_KEY must be set"),
         infobip_base_url: env::var("INFOBIP_BASE_URL").expect("INFOBIP_BASE_URL must be set"),
         whatsapp_phone_number_id: env::var("WHATSAPP_PHONE_NUMBER_ID").expect("WHATSAPP_PHONE_NUMBER_ID must be set"),
@@ -77,7 +81,7 @@ impl Default for Content {
     }
 }
 
-async fn send_vcard(client: &WhatsAppClient, config: &Config, vcard: &str, recipient: &str) -> Result<(), Box<dyn std::error::Error>>{
+async fn send_vcard(client: &WhatsAppClient, config: &some_module::Config, vcard: &str, recipient: &str) -> Result<(), Box<dyn std::error::Error>>{
     // the sdk might not provide native support for certain functionalites
     // Refer to official crate for more clarification
 
@@ -115,7 +119,7 @@ async fn send_vcard(client: &WhatsAppClient, config: &Config, vcard: &str, recip
 // Webhook handler for incoming WhatsApp messages
 async fn handle_webhook(
     message: WhatsAppMessage,
-    config: Config,
+    config: some_module::Config,
     client: WhatsAppClient,
 ) -> Result<impl warp::Reply, warp::Rejection>{
     info!("Received message from {}: {:?}", message.from, message.text);
@@ -149,11 +153,11 @@ async fn main(){
     let config = load_config();
     info!("Starting WhatsApp contact adder with trigger word: {}", config.trigger_word);
 
-    //Initializes infobip whatsapp client
+    //Initializes infobip wozap client
     let mut configuration = Configuration::from_env_api_key()
         .expect("Failed to load Infobip configuration from environment");
-    // Set the base_url field directly
-    configuration.base_url = config.infobip_base_url.clone();
+    // Use the set_base_url method if available, otherwise construct Configuration manually
+    configuration = configuration.with_base_url(config.infobip_base_url.clone());
     let client = WhatsAppClient::with_configuration(configuration);
     
     let (tx, mut rx) = mpsc::channel::<WhatsAppMessage>(100);
