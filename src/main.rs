@@ -154,12 +154,12 @@ async fn main(){
     info!("Starting WhatsApp contact adder with trigger word: {}", config.trigger_word);
 
     //Initializes infobip wozap client
-    let mut configuration = Configuration::from_env_api_key()
-        .expect("Failed to load Infobip configuration from environment");
-    // Use the set_base_url method if available, otherwise construct Configuration manually
-    configuration = configuration.with_base_url(config.infobip_base_url.clone());
-    let client = WhatsAppClient::with_configuration(configuration);
-    
+let mut configuration = Configuration::from_env_api_key()
+    .expect("Failed to load Infobip configuration from environment");
+// Set the base URL directly
+configuration.base_url = config.infobip_base_url.clone();
+let client = WhatsAppClient::with_configuration(configuration);
+
     let (tx, mut rx) = mpsc::channel::<WhatsAppMessage>(100);
 
     //Spawn a task to process messages with rate limiting
